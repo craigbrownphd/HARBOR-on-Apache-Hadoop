@@ -8,6 +8,9 @@ import java.io.IOException;
 public class QFDMatcherMapper extends Mapper<LongWritable, Text,
 				      IntWritable, WebTrafficRecord> {
 
+    /** Text object to store a word to write to output. */
+    private Text webTrafficRecord = new Text();
+
     @Override
     public void map(LongWritable lineNo, Text line, Context ctxt)
 	throws IOException, InterruptedException {
@@ -15,6 +18,8 @@ public class QFDMatcherMapper extends Mapper<LongWritable, Text,
         // as WebTrafficRecord, your key should be such that all
         // records with the same source IP/source port/dest IP/dest port
         // are the same so they always go to the same reducer...
-        System.err.println("Need to implement!");
+
+        WebTrafficRecord placeholder = WebTrafficRecord.parseFromLine(line.toString());
+        ctxt.write(new IntWritable(placeholder.matchHashCode()), placeholder);  //write(<IntWritable, WebTrafficRecord>)
     }
 }
