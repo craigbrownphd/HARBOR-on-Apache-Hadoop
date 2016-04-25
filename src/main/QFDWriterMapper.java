@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import javax.xml.bind.DatatypeConverter;
 
 public class QFDWriterMapper extends Mapper<RequestReplyMatch,
 				     NullWritable, WTRKey,
@@ -57,7 +59,17 @@ public class QFDWriterMapper extends Mapper<RequestReplyMatch,
         // You need to do srcIP, destIP, and cookie QFD dispatch, and should
         // be able to use a much more generic structure
 
-        System.err.println("Here needs implementation!");
-    }
+        String[] get_srcIP_destIP_cookie = {record.getSrcIp(), record.getDestIp(), record.getCookie()};
+        String[] srcIP_destIP_cookie = {"srcIP", "destIP", "cookie"};
 
+        for (int i = 0; i < 3; i++) {
+            MessageDigest md = HashUtils.cloneMessageDigest(messageDigest);
+            md.update(get_srcIP_destIP_cookie[i].getBytes(StandardCharsets.UTF_8));
+            byte[] hash = md.digest();
+            byte[] hashBytes = Arrays.copyOf(hash, HashUtils.NUM_HASH_BYTES);
+            String hashString = DatatypeConverter.printHexBinary(hashBytes);
+            WTRKey key = new WTRKey(srcIP_destIP_cookie[i], hashString);
+            ctxt.write(key, record);
+        }
+    }
 }

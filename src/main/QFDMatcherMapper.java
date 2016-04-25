@@ -8,9 +8,6 @@ import java.io.IOException;
 public class QFDMatcherMapper extends Mapper<LongWritable, Text,
 				      IntWritable, WebTrafficRecord> {
 
-    /** Text object to store a word to write to output. */
-    private Text webTrafficRecord = new Text();
-
     @Override
     public void map(LongWritable lineNo, Text line, Context ctxt)
 	throws IOException, InterruptedException {

@@ -1,7 +1,12 @@
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
+import java.io.ObjectOutputStream;
 import java.io.IOException;
+import java.util.*;
 
 public class QFDWriterReducer extends Reducer<WTRKey, RequestReplyMatch, NullWritable, NullWritable> {
 
@@ -25,6 +30,16 @@ public class QFDWriterReducer extends Reducer<WTRKey, RequestReplyMatch, NullWri
         // new Path(filename) gives a path specification
         // hdfs.create(path, true) will create an
         // output stream pointing to that file
+        Set<RequestReplyMatch> qfdSet = new HashSet<>();
+        for (RequestReplyMatch match : values) qfdSet.add(match);
+        QueryFocusedDataSet object = new QueryFocusedDataSet(key.getName(), key.getHashBytes(), qfdSet);
+
+        FileSystem filesystem = FileSystem.get(ctxt.getConfiguration());
+        Path url = new Path("qfds/" + key.getName() + "/" + key.getName() + "_" + key.getHashBytes());
+        FSDataOutputStream outStream = filesystem.create(url, true);
+        ObjectOutputStream objOutStream = new ObjectOutputStream(outStream);
+        objOutStream.writeObject(object);
+        outStream.close();
 
     }
 }
