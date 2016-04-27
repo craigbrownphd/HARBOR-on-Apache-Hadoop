@@ -59,25 +59,54 @@ public class TotalFailMapper extends Mapper<LongWritable, Text, WTRKey,
         FSDataInputStream inStream = filesystem.open(url);
         ObjectInputStream objInStream = new ObjectInputStream(inStream);
 
+        // From the loaded file (srcIP QFE), for all RequestReplyMatch, laod all cookies.
+        QueryFocusedDataSet srcIP_QFD_object;
+        ArrayList<String> cookies = new ArrayList<>();  // All cookies stored here!
         try{
             // QFDset retrieved.
-            QueryFocusedDataSet object = (QueryFocusedDataSet)objInStream.readObject();
+            srcIP_QFD_object = (QueryFocusedDataSet)objInStream.readObject();
+            // Obtain all cookies from the QFDset.
+            for (RequestReplyMatch pair : srcIP_QFD_object.getMatches()) cookies.add(pair.getCookie());
         }
         catch (ClassNotFoundException e) {
         }
         inStream.close();
 
-        // Obtain all cookies from the QFDset.
-        ArrayList<String> cookies = new ArrayList<>();
-        for (RequestReplyMatch pair : object.getMatches()) cookies.add(pair.getCookie());
-        
+        // For each cookie we found above, open the coresponding file qfds/cookie/cookie_hash
+        // then load all the RequestReplyMatch and emmit them.
+        for (String cookie : cookies) {
 
+            // Find the hash of the cookie
+            md = HashUtils.cloneMessageDigest(messageDigest);
+            md.update(cookie.getBytes(StandardCharsets.UTF_8));
+            hash = md.digest();
+            hashBytes = Arrays.copyOf(hash, HashUtils.NUM_HASH_BYTES);
+            hashString = DatatypeConverter.printHexBinary(hashBytes);    // Cookie hash here.
 
+            // Load the file corresponding to each cookie
+            filesystem = FileSystem.get(ctxt.getConfiguration());
+            url = new Path("qfds/cookie/cookie_" + hashString);
+            inStream = filesystem.open(url);
+            objInStream = new ObjectInputStream(inStream);
 
-
-
-        //ctxt.write(key, record);
-
-        System.err.println("You need to put some code here!");
+            // For each cookie file (QFD) load all RequestReplyMatch and emmit them.
+            try{
+                // QFDset retrieved.
+                QueryFocusedDataSet object = (QueryFocusedDataSet)objInStream.readObject();
+                for (RequestReplyMatch pair : object.getMatches()) {
+                    // Hash the username for the key.
+                    md = HashUtils.cloneMessageDigest(messageDigest);
+                    md.update(pair.getUserName().getBytes(StandardCharsets.UTF_8));
+                    hash = md.digest();
+                    hashBytes = Arrays.copyOf(hash, HashUtils.NUM_HASH_BYTES);
+                    hashString = DatatypeConverter.printHexBinary(hashBytes);
+                    key = new WTRKey("torusers", hashString);
+                    ctxt.write(key, pair);
+                }
+            }
+            catch (ClassNotFoundException e) {
+            }
+            inStream.close();
+        }
     }
 }

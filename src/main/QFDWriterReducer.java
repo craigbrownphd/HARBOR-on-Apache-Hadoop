@@ -31,7 +31,7 @@ public class QFDWriterReducer extends Reducer<WTRKey, RequestReplyMatch, NullWri
         // hdfs.create(path, true) will create an
         // output stream pointing to that file
         Set<RequestReplyMatch> qfdSet = new HashSet<>();
-        for (RequestReplyMatch match : values) qfdSet.add(match);
+        for (RequestReplyMatch match : values) qfdSet.add(new RequestReplyMatch(match));
         QueryFocusedDataSet object = new QueryFocusedDataSet(key.getName(), key.getHashBytes(), qfdSet);
 
         FileSystem filesystem = FileSystem.get(ctxt.getConfiguration());
@@ -40,6 +40,6 @@ public class QFDWriterReducer extends Reducer<WTRKey, RequestReplyMatch, NullWri
         ObjectOutputStream objOutStream = new ObjectOutputStream(outStream);
         objOutStream.writeObject(object);
         outStream.close();
-
+        filesystem.closeAll();
     }
 }
