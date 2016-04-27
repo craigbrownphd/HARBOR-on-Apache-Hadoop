@@ -107,6 +107,7 @@ public class TotalFailMapper extends Mapper<LongWritable, Text, WTRKey,
             catch (ClassNotFoundException e) {
             }
             inStream.close();
+            filesystem.closeAll();
         }
     }
 }
